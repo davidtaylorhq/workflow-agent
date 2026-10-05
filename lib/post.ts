@@ -52,7 +52,7 @@ const CUT_SHORT =
   "This run ended before I could sum up. What follows is what I had already" +
   " checked.";
 
-export async function publish(replyTo?: number): Promise<void> {
+async function deliver(replyTo: number | undefined): Promise<void> {
   const finish = readOutput("finish.json");
   const findings = readOutput("findings.jsonl");
   const comments = findings === undefined ? [] : readFindings(findings);
@@ -108,6 +108,20 @@ export async function publish(replyTo?: number): Promise<void> {
     [reply, ...comments.map(asText)].filter(Boolean).join("\n\n"),
     replyTo
   );
+}
+
+export async function publish(replyTo?: number): Promise<void> {
+  try {
+    await deliver(replyTo);
+  } catch (error) {
+    // Checking a finding is the expensive part of a review. If the reply
+    // cannot be posted, the log is the only place left to keep them.
+    const findings = readOutput("findings.jsonl");
+    for (const f of findings === undefined ? [] : readFindings(findings)) {
+      console.error(`unposted finding ${f.path}:${f.line}\n${f.body}\n`);
+    }
+    throw error;
+  }
 }
 
 function asText(f: Finding): string {

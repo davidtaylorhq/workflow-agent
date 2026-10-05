@@ -37,12 +37,48 @@ export class GitHubError extends Error {
   }
 }
 
+// Codes that mean the connection never carried the request. A failure that
+// might have been delivered is left alone: GitHub may have acted on it, and
+// sending it again would post twice.
+const NEVER_CONNECTED = new Set(["ENOTFOUND", "EAI_AGAIN", "ECONNREFUSED"]);
+const CUT_WHILE_SENDING = new Set(["EPIPE", "ECONNRESET"]);
+const BACKOFF = [250, 1000];
+
+export function unsent(error: unknown): boolean {
+  const cause = (error as { cause?: { code?: string; syscall?: string } })
+    ?.cause;
+  const code = cause?.code;
+  if (code === undefined) {
+    return false;
+  }
+  return (
+    NEVER_CONNECTED.has(code) ||
+    // Mid-body: GitHub never saw a whole request, so it cannot have acted.
+    (CUT_WHILE_SENDING.has(code) && cause?.syscall === "write")
+  );
+}
+
+async function send(url: string, init: RequestInit): Promise<Response> {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await fetch(url, init);
+    } catch (error) {
+      const retryable = init.method === undefined || init.method === "GET";
+      if (attempt >= BACKOFF.length || !(retryable || unsent(error))) {
+        throw error;
+      }
+      console.error(`retrying ${init.method ?? "GET"} ${url}: ${error}`);
+      await new Promise((done) => setTimeout(done, BACKOFF[attempt]));
+    }
+  }
+}
+
 export async function request(
   method: string,
   path: string,
   body?: unknown
 ): Promise<Response> {
-  const response = await fetch(`${API}${path}`, {
+  const response = await send(`${API}${path}`, {
     method,
     headers: body
       ? { ...headers(), "content-type": "application/json" }
@@ -65,7 +101,7 @@ async function paginate<T>(path: string): Promise<T[]> {
     `${API}${path}${path.includes("?") ? "&" : "?"}per_page=100`;
 
   while (url) {
-    const response: Response = await fetch(url, { headers: headers() });
+    const response: Response = await send(url, { headers: headers() });
     if (!response.ok) {
       throw new Error(
         `GitHub said ${response.status} to GET ${url}: ${await response.text()}`

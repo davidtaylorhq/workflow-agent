@@ -157,6 +157,30 @@ test("findings survive a turn that never finished", async () => {
   assert.match(review.body, /ended before I could sum up/);
 });
 
+// 4 minutes of checking goes into a finding. If it cannot be posted, the log
+// has to be enough to recover it by hand.
+test("findings that cannot be posted are written to the log", async () => {
+  writeFileSync(
+    join(temp, "output/findings.jsonl"),
+    '{"path":"a.rb","line":12,"body":"the limit is capped twice"}\n'
+  );
+  reject.add("/reviews");
+  rejectionStatus = 503;
+
+  const said: string[] = [];
+  const was = console.error;
+  console.error = (...args: unknown[]) => said.push(args.join(" "));
+  try {
+    await assert.rejects(publish(), /503/);
+  } finally {
+    console.error = was;
+  }
+
+  const log = said.join("\n");
+  assert.match(log, /unposted finding a\.rb:12/);
+  assert.match(log, /the limit is capped twice/);
+});
+
 test("an uncertain review failure does not risk posting a duplicate reply", async () => {
   writeFileSync(
     join(temp, "output/findings.jsonl"),
