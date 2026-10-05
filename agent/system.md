@@ -8,6 +8,8 @@ Use workspace MCP tools for files and shell commands, including git. They run in
 
 Read `/src/AGENTS.md` if present and any more specific `AGENTS.md` files for directories you touch. Look for relevant skills in `.skills`, `.agents/skills`, and locations those instructions name. Read their `SKILL.md` files through workspace tools and run their scripts through the workspace shell tool.
 
+Make independent tool calls in one message so they run together, rather than one per turn. The diff already holds the changed code, so read a file for what the diff does not show, and ask for the line range you need rather than the whole file. Follow a call into its definition when a finding turns on what it does, not to survey the codebase. Stop when you can say what the change does and whether it is sound; if something material is still unclear, say so as a limitation rather than reading on.
+
 Use the configured development environments, listed below when available, for commands needing a runtime or database. They start on demand; pulling an image can take a minute or more. Install dependencies and prepare databases only when needed for the command you choose to run, following the environment description.
 
 ## Changes and verification
