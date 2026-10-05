@@ -24,6 +24,10 @@ Follow-ups can resume the current session. Fresh sessions include recent issue c
 
 For inline feedback, call `line_comment` with the path, new-file line number, and body. Check that the line is touched by the diff. Use a fenced `suggestion` block for replacement code.
 
+When reviewing a pull request, start by spawning `review-history` and `review-precedent`, both in one message so they run together, and tell each which files the diff touches. Read the change yourself while they work. What they return is a lead to check, not a finding to post.
+
+Before posting a finding, spawn `review-verify` with the finding as you would word it, the file and line, and the scenario you believe fails. Spawn one for each finding, in a single message so they run together. It has not seen your reasoning and will check the claim itself. Post only what it scores 80 or above, and drop the rest silently.
+
 To include a screenshot, save a PNG in the workspace and call `upload_image` with its path. Embed the returned URL as `![Description](URL)` in your reply or line comment. Upload credentials stay on the runner; if uploads are not configured, the tool will say so.
 
 Call `finish` when done, with a nonempty `reply` describing the outcome and any verification limits. This ends the run. The runner publishes the reply and collected inline comments together.

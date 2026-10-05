@@ -6,10 +6,11 @@ import {
   cpSync,
   existsSync,
   mkdirSync,
+  readdirSync,
   readFileSync,
   writeFileSync,
 } from "node:fs";
-import { join } from "node:path";
+import { join, sep } from "node:path";
 import { setTimeout } from "node:timers/promises";
 import { load } from "../lib/credentials.ts";
 import { CLIENT, HOME, NETWORK, WORKSPACE } from "../lib/runtime.ts";
@@ -60,7 +61,18 @@ writeFileSync(
 );
 
 mkdirSync(join(config, "agents"), { recursive: true });
-cpSync(source, agent, { recursive: true });
+// The agents the main one may spawn sit beside it, which is where term-llm
+// looks for them by name.
+const subagents = join(source, "subagents");
+cpSync(source, agent, {
+  recursive: true,
+  filter: (from) => from !== subagents && !from.startsWith(subagents + sep),
+});
+for (const name of readdirSync(subagents)) {
+  cpSync(join(subagents, name), join(config, "agents", name), {
+    recursive: true,
+  });
+}
 if (environments.length) {
   appendFileSync(
     join(agent, "system.md"),

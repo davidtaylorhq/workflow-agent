@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import {
   chmodSync,
+  existsSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
@@ -156,6 +157,22 @@ test("workspace tools and the model client run in separate containers", (t) => {
   assert.ok(calls().every(({ args }) => args[0] !== "cp"));
   assert.ok(
     workspace.args.includes(`${dir}/clientkey:/home/agent/.ssh/gate:ro`)
+  );
+});
+
+// Spawning one by name only works if it sits in the agents directory itself.
+test("spawnable agents install beside the main one, not inside it", (t) => {
+  const f = fixture(t);
+  f.run("containers-up.ts");
+
+  const agents = join(f.dir, "agent-config/agents");
+  for (const name of ["review-verify", "review-history", "review-precedent"]) {
+    assert.ok(existsSync(join(agents, name, "agent.yaml")), name);
+    assert.ok(existsSync(join(agents, name, "system.md")), `${name} prompt`);
+  }
+  assert.ok(
+    !existsSync(join(agents, "workflow-agent/subagents")),
+    "and not a second time under the main agent"
   );
 });
 

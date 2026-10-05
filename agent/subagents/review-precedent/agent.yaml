@@ -1,0 +1,10 @@
+name: review-precedent
+description: "Finds review comments on earlier pull requests that apply to this one"
+agents_md: "false"
+skills: "none"
+
+mcp:
+  - name: github
+
+max_turns: 25
+handover_mode: "light"

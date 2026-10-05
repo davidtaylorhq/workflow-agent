@@ -1,0 +1,11 @@
+name: review-verify
+description: "Scores one candidate review finding for whether it is real"
+agents_md: "false"
+skills: "none"
+
+mcp:
+  - name: github
+  - name: workspace
+
+max_turns: 20
+handover_mode: "light"

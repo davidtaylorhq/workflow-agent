@@ -5,7 +5,7 @@ agents_md: "false"
 skills: "all"
 
 tools:
-  enabled: [update_plan]
+  enabled: [update_plan, spawn_agent]
   custom:
     - name: upload_image
       description: "Upload a workspace PNG image or WebM video to the configured GitHub attachments repository. Returns a URL for your final reply or line comment. Embed PNGs with Markdown image syntax; put video URLs on their own line. Uploads immediately; requires caller configuration."
@@ -55,6 +55,16 @@ tools:
             type: string
         required: [head, base, title, body]
         additionalProperties: false
+
+# Reviewing splits finding a defect from judging it, so nothing reports a
+# finding the agent that found it also cleared.
+spawn:
+  max_parallel: 5
+  max_depth: 1
+  timeout: 600
+  allowed_agents: [review-verify, review-history, review-precedent]
+  agent_models:
+    review-verify: claude-bin:sonnet
 
 mcp:
   - name: github
