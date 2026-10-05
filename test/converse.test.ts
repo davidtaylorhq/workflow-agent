@@ -87,9 +87,10 @@ fs.writeFileSync(process.env.RUNNER_TEMP + "/output/finish.json", JSON.stringify
   const calls = readFileSync(join(dir, "calls"), "utf8")
     .trim()
     .split("\n")
-    .map((line) => JSON.parse(line));
+    .map((line) => JSON.parse(line) as string[])
+    .filter((args) => args.includes("ask"));
   assert.equal(calls.length, 1);
-  assert.ok(calls[0].at(-1).includes(env.AGENT_TASK));
+  assert.ok(calls[0]!.at(-1)!.includes(env.AGENT_TASK));
   assert.deepEqual(requests, [
     "GET /repos/o/r/issues/7/comments?per_page=100",
     "POST /repos/o/r/issues/7/comments",
@@ -171,7 +172,8 @@ fs.writeFileSync(
   const calls = readFileSync(join(dir, "calls"), "utf8")
     .trim()
     .split("\n")
-    .map((line) => JSON.parse(line) as string[]);
+    .map((line) => JSON.parse(line) as string[])
+    .filter((args) => args.includes("ask"));
   assert.equal(calls.length, 2, "the first turn, then one pass for a reply");
 
   assert.ok(

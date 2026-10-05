@@ -1,5 +1,11 @@
 import assert from "node:assert/strict";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import {
+  chmodSync,
+  mkdirSync,
+  mkdtempSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
@@ -68,4 +74,27 @@ test("an unreadable line does not hide the rest", (t) => {
     "not json\n" + JSON.stringify(result("9", "grep", "boom", true)) + "\n"
   );
   assert.deepEqual(failures(logs), ["grep failed: boom"]);
+});
+
+// Diagnostics must never be the reason a run fails.
+test("a record it cannot read is reported, not thrown", (t) => {
+  const dir = mkdtempSync(join(tmpdir(), "debug-"));
+  t.after(() => {
+    chmodSync(join(dir, "debug"), 0o700);
+    rmSync(dir, { recursive: true, force: true });
+  });
+  const logs = join(dir, "debug");
+  mkdirSync(logs);
+  writeFileSync(join(logs, "session.jsonl"), "{}\n");
+  chmodSync(logs, 0o000);
+
+  const said: string[] = [];
+  const was = console.error;
+  console.error = (...args: unknown[]) => said.push(args.join(" "));
+  try {
+    assert.deepEqual(failures(logs), []);
+  } finally {
+    console.error = was;
+  }
+  assert.match(said.join("\n"), /could not read the run's record/);
 });

@@ -236,7 +236,11 @@ for (const resume of [false, true]) {
       invoked.args.join(" "),
       /GH_TOKEN|github-secret|model-secret|\/src|workflow-agent-sandbox/
     );
-    assert.equal(calls().length, 1);
+    assert.equal(
+      calls().filter(({ args }) => args.includes("ask")).length,
+      1,
+      "one turn, whatever else the runner asks the container for"
+    );
     assert.throws(
       () => readFileSync(join(dir, "output", "finish.json")),
       /ENOENT/

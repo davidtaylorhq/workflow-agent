@@ -36,7 +36,7 @@ const now = () => Math.floor(Date.now() / 1000);
 // Posting a finding is the one thing the agent does throughout a review, so
 // it is where it can be told how long it has left.
 test("leaving a finding says how much of the turn is left", () => {
-  assert.match(noted(String(now() + 300)), /About 5 minutes left/);
+  assert.match(noted(String(now() + 605)), /About 10 minutes left/);
   assert.match(noted(String(now() + 30)), /About 3\d seconds left/);
   assert.match(noted(String(now() - 5)), /out of time\. Call finish now/);
 });

@@ -77,15 +77,31 @@ export function ask(prompt: string, resume: boolean): number {
     rmSync(join(temp, "output", leftover), { force: true });
   }
 
-  const status =
+  let status =
     run(prompt, resume, process.env.AGENT_TIMEOUT!, process.env.MAX_TURNS!) ??
     1;
-  if (status === 0 || readOutput("finish.json") !== undefined) {
-    return status;
+  if (status !== 0 && readOutput("finish.json") === undefined) {
+    // It ran past its time or died mid-turn. One short pass, so the run says
+    // something rather than ending in silence.
+    console.error(
+      "the turn did not finish; asking for a reply with what it has"
+    );
+    status = run(OUT_OF_TIME, true, LAST_WORD, "2") ?? status;
   }
+  readable();
+  return status;
+}
 
-  // It ran past its time or died mid-turn. One short pass, so the run says
-  // something rather than ending in silence.
-  console.error("the turn did not finish; asking for a reply with what it has");
-  return run(OUT_OF_TIME, true, LAST_WORD, "2") ?? status;
+// term-llm writes its record as the agent, for the agent alone. The runner is
+// somebody else, and reads it from the shared directory.
+function readable(): void {
+  spawnSync("docker", [
+    "exec",
+    "-u",
+    "agent",
+    CLIENT,
+    "sh",
+    "-c",
+    "chmod -R g+rX /output/debug 2>/dev/null || true",
+  ]);
 }

@@ -22,28 +22,34 @@ type Entry = {
   request?: { messages?: { parts?: Part[] }[] };
 };
 
-function newest(dir: string): string | undefined {
-  if (!existsSync(dir)) {
+// Saying nothing is worse than a run that dies telling us why it cannot.
+function read(dir: string): string | undefined {
+  try {
+    if (!existsSync(dir)) {
+      return undefined;
+    }
+    const newest = readdirSync(dir)
+      .filter((name) => name.endsWith(".jsonl"))
+      .map((name) => join(dir, name))
+      .sort((a, b) => statSync(b).mtimeMs - statSync(a).mtimeMs)[0];
+    return newest === undefined ? undefined : readFileSync(newest, "utf8");
+  } catch (error) {
+    console.error(`could not read the run's record: ${error}`);
     return undefined;
   }
-  const logs = readdirSync(dir)
-    .filter((name) => name.endsWith(".jsonl"))
-    .map((name) => join(dir, name))
-    .sort((a, b) => statSync(b).mtimeMs - statSync(a).mtimeMs);
-  return logs[0];
 }
 
 export function failures(
   dir = join(process.env.RUNNER_TEMP ?? "", "output", "debug")
 ): string[] {
-  const log = newest(dir);
+  const log = read(dir);
   if (log === undefined) {
     return [];
   }
 
   const out: string[] = [];
   const seen = new Set<string>();
-  for (const line of readFileSync(log, "utf8").split("\n")) {
+  for (const line of log.split("\n")) {
     if (!line.trim()) {
       continue;
     }
