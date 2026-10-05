@@ -139,6 +139,24 @@ test("missing agent output leaves claims eligible for retry", async () => {
   assert.equal(existsSync(join(temp, "pending-claims/issues-200")), true);
 });
 
+// Verifying a finding is the expensive part. Throwing them away because the
+// turn ran out of time afterwards wastes the whole review.
+test("findings survive a turn that never finished", async () => {
+  rmSync(join(temp, "output/finish.json"), { force: true });
+  writeFileSync(
+    join(temp, "output/findings.jsonl"),
+    JSON.stringify({ path: "a.ts", line: 3, body: "wrong" }) + "\n"
+  );
+
+  await publish();
+
+  assert.equal(sent.length, 1);
+  assert.match(sent[0]!.path, /\/pulls\/7\/reviews$/);
+  const review = JSON.parse(sent[0]!.body);
+  assert.equal(review.comments.length, 1);
+  assert.match(review.body, /ended before I could sum up/);
+});
+
 test("an uncertain review failure does not risk posting a duplicate reply", async () => {
   writeFileSync(
     join(temp, "output/findings.jsonl"),

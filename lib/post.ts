@@ -48,16 +48,25 @@ function readFindings(contents: string): Finding[] {
   return out;
 }
 
+const CUT_SHORT =
+  "This run ended before I could sum up. What follows is what I had already" +
+  " checked.";
+
 export async function publish(replyTo?: number): Promise<void> {
   const finish = readOutput("finish.json");
-  if (finish === undefined) {
+  const findings = readOutput("findings.jsonl");
+  const comments = findings === undefined ? [] : readFindings(findings);
+
+  // A turn that died still leaves its findings behind, and they are worth
+  // more than the failure that interrupted them.
+  if (finish === undefined && comments.length === 0) {
     console.error("the agent never finished; nothing to post");
     throw new Error("nothing to post");
   }
-  const reply = ((JSON.parse(finish).reply as string) ?? "").trim();
-
-  const findings = readOutput("findings.jsonl");
-  const comments = findings === undefined ? [] : readFindings(findings);
+  const reply =
+    finish === undefined
+      ? CUT_SHORT
+      : ((JSON.parse(finish).reply as string) ?? "").trim();
 
   // Only a pull request has a diff to hang them on.
   if (comments.length > 0 && process.env.IS_PULL_REQUEST === "yes") {

@@ -61,7 +61,7 @@ tools:
 spawn:
   max_parallel: 5
   max_depth: 1
-  timeout: 600
+  timeout: 150
   allowed_agents: [review-verify, review-history, review-precedent]
   agent_models:
     review-verify: claude-bin:sonnet
