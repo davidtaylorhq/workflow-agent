@@ -150,9 +150,16 @@ test("workspace tools and the model client run in separate containers", (t) => {
   assert.ok(
     agent.args.includes(`${dir}/ssh-config:/home/agent/.ssh/config:ro`)
   );
-  assert.equal(
-    readFileSync(join(dir, "agent-config/config.yaml"), "utf8"),
-    "default_provider: anthropic\n"
+  const installed = readFileSync(join(dir, "agent-config/config.yaml"), "utf8");
+  assert.match(
+    installed,
+    /^default_provider: anthropic$/m,
+    "the project's own"
+  );
+  // Nothing else records why a tool or a spawned agent failed.
+  assert.match(
+    installed,
+    /^debug_logs:\n  enabled: true\n  dir: \/output\/debug$/m
   );
   assert.ok(calls().every(({ args }) => args[0] !== "cp"));
   assert.ok(

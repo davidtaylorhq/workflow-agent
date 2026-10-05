@@ -6,6 +6,7 @@ import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { ask } from "../lib/agent.ts";
 import { claim } from "../lib/claim.ts";
+import { failures } from "../lib/debug.ts";
 import { render } from "../lib/mentions.ts";
 import { publish } from "../lib/post.ts";
 import { again, first, type Situation } from "../lib/prompt.ts";
@@ -40,6 +41,12 @@ const devLog = spawn(
 
 async function turn(prompt: string, resume: boolean, replyTo?: number) {
   const status = ask(prompt, resume);
+
+  // A tool or a spawned agent can fail without the turn failing, and the
+  // agent's own output never says why.
+  for (const said of failures()) {
+    console.error(`[agent] ${said}`);
+  }
   progress("next");
 
   // Report the agent's failure rather than the empty publish it causes.

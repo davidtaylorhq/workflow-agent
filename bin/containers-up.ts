@@ -137,18 +137,32 @@ writeFileSync(
   }),
   { mode: 0o640 }
 );
-if (
+const projectConfig = Boolean(
   process.env.TERM_LLM_CONFIG &&
   existsSync(process.env.TERM_LLM_CONFIG) &&
   readFileSync(process.env.TERM_LLM_CONFIG).length
-) {
-  cpSync(process.env.TERM_LLM_CONFIG, join(config, "config.yaml"));
+);
+if (projectConfig) {
+  cpSync(process.env.TERM_LLM_CONFIG!, join(config, "config.yaml"));
 }
+
+// term-llm keeps a full record of every turn, tool result included. Nothing
+// else says why a tool or a spawned agent failed: the run's own output has
+// only a status per call. The output directory is shared with the runner.
+const configFile = join(config, "config.yaml");
+const given = existsSync(configFile) ? readFileSync(configFile, "utf8") : "";
+if (!/^debug_logs:/m.test(given)) {
+  appendFileSync(
+    configFile,
+    `${given && !given.endsWith("\n") ? "\n" : ""}debug_logs:\n  enabled: true\n  dir: /output/debug\n`
+  );
+}
+
 const group = String(process.getgid!());
 run("sudo", "chown", "-R", `1000:${group}`, config, sshConfig);
 run("sudo", "install", "-d", "-o", "1000", "-g", group, "-m", "2770", output);
 // Let term-llm perform its own provider detection before freezing the config.
-if (!existsSync(join(config, "config.yaml"))) {
+if (!projectConfig) {
   const credentials = load(process.env.PROVIDER_ENV_FILE, process.env);
   run(
     "docker",
