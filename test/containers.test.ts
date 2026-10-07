@@ -92,8 +92,10 @@ if (args.includes("ask")) process.exit(Number(process.env.AGENT_EXIT || 0));
 test("workspace tools and the model client run in separate containers", (t) => {
   const { dir, run, calls } = fixture(t);
   run("containers-up.ts");
-  const started = calls().filter(({ args }) => args[0] === "run");
-  assert.equal(started.length, 2);
+  const started = calls().filter(
+    ({ args }) => args[0] === "run" && args.includes("-d")
+  );
+  assert.equal(started.length, 2, "two containers outlive the step");
   const workspace = started.find(({ args }) =>
     args.includes("workflow-agent-sandbox")
   )!;
@@ -150,16 +152,27 @@ test("workspace tools and the model client run in separate containers", (t) => {
   assert.ok(
     agent.args.includes(`${dir}/ssh-config:/home/agent/.ssh/config:ro`)
   );
-  const installed = readFileSync(join(dir, "agent-config/config.yaml"), "utf8");
   assert.match(
-    installed,
+    readFileSync(join(dir, "agent-config/config.yaml"), "utf8"),
     /^default_provider: anthropic$/m,
-    "the project's own"
+    "the project's own, untouched"
   );
-  // Nothing else records why a tool or a spawned agent failed.
-  assert.match(
-    installed,
-    /^debug_logs:\n  enabled: true\n  dir: \/output\/debug$/m
+  // Written by term-llm itself, which merges and knows the key, and only once
+  // provider detection has had its chance at an absent config.
+  const configured = calls().find(({ args }) =>
+    args.some((arg) => arg.includes("config set debug_logs.enabled true"))
+  )!;
+  assert.ok(configured, "debug logging is turned on");
+  assert.ok(
+    configured.args.some((arg) =>
+      arg.includes("config set debug_logs.dir /output/debug")
+    )
+  );
+  assert.ok(
+    configured.args.includes(
+      `${dir}/agent-config:/home/agent/.config/term-llm:rw`
+    ),
+    "with the configuration writable"
   );
   assert.ok(calls().every(({ args }) => args[0] !== "cp"));
   assert.ok(
@@ -196,7 +209,9 @@ test("declared environments expose the static dev client read-only", (t) => {
     JSON.stringify({ rails: { image: "test", mount: "/src" } })
   );
   run("containers-up.ts");
-  const args = calls().find((call) => call.args[0] === "run")!.args;
+  const args = calls().find((call) =>
+    call.args.includes("workflow-agent-sandbox")
+  )!.args;
   assert.ok(args.some((arg) => arg.endsWith("/bin/dev:/usr/local/bin/dev:ro")));
 
   assert.ok(calls().every((call) => !call.args.includes("bash")));

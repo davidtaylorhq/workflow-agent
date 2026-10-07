@@ -146,18 +146,6 @@ if (projectConfig) {
   cpSync(process.env.TERM_LLM_CONFIG!, join(config, "config.yaml"));
 }
 
-// term-llm keeps a full record of every turn, tool result included. Nothing
-// else says why a tool or a spawned agent failed: the run's own output has
-// only a status per call. The output directory is shared with the runner.
-const configFile = join(config, "config.yaml");
-const given = existsSync(configFile) ? readFileSync(configFile, "utf8") : "";
-if (!/^debug_logs:/m.test(given)) {
-  appendFileSync(
-    configFile,
-    `${given && !given.endsWith("\n") ? "\n" : ""}debug_logs:\n  enabled: true\n  dir: /output/debug\n`
-  );
-}
-
 const group = String(process.getgid!());
 run("sudo", "chown", "-R", `1000:${group}`, config, sshConfig);
 run("sudo", "install", "-d", "-o", "1000", "-g", group, "-m", "2770", output);
@@ -181,6 +169,33 @@ if (!projectConfig) {
     "list"
   );
 }
+// term-llm keeps a full record of every turn, tool results included. Nothing
+// else says why a tool or a spawned agent failed: the run's own output has a
+// mark per call and no reason. The directory is shared with the runner.
+//
+// It goes in here, through term-llm's own writer, for three reasons: the file
+// existing any earlier makes term-llm's `NeedsSetup` false and skips the
+// provider detection above; its own save drops every key it has no field for;
+// and writing the key as text cannot merge with a configuration the project
+// supplied.
+run(
+  "docker",
+  "run",
+  "--rm",
+  "-u",
+  "agent",
+  "-e",
+  `HOME=${HOME}`,
+  "-v",
+  `${config}:${HOME}/.config/term-llm:rw`,
+  image,
+  "sh",
+  "-c",
+  `t=${HOME}/.local/bin/term-llm;` +
+    ' "$t" config set debug_logs.enabled true &&' +
+    ' "$t" config set debug_logs.dir /output/debug'
+);
+
 run("docker", "network", "create", NETWORK);
 const common = [
   "--network",

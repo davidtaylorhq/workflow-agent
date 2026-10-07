@@ -44,7 +44,7 @@ async function turn(prompt: string, resume: boolean, replyTo?: number) {
 
   // A tool or a spawned agent can fail without the turn failing, and the
   // agent's own output never says why.
-  for (const said of failures()) {
+  for (const said of await failures()) {
     console.error(`[agent] ${said}`);
   }
   progress("next");

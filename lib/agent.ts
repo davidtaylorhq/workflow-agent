@@ -72,9 +72,10 @@ function run(prompt: string, resume: boolean, timeout: string, turns: string) {
 export function ask(prompt: string, resume: boolean): number {
   const temp = process.env.RUNNER_TEMP!;
 
-  // Last turn's output must not be mistaken for this one's.
-  for (const leftover of ["finish.json", "findings.jsonl"]) {
-    rmSync(join(temp, "output", leftover), { force: true });
+  // Last turn's output must not be mistaken for this one's. The record goes
+  // too: a turn should report what went wrong in it, not again in the next.
+  for (const leftover of ["finish.json", "findings.jsonl", "debug"]) {
+    rmSync(join(temp, "output", leftover), { force: true, recursive: true });
   }
 
   let status =
