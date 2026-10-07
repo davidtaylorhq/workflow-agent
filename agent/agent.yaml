@@ -62,7 +62,12 @@ spawn:
   max_parallel: 5
   max_depth: 1
   timeout: 150
-  allowed_agents: [review-verify, review-history, review-precedent]
+  allowed_agents:
+    - review-defects
+    - review-contract
+    - review-reuse
+    - review-sweep
+    - review-verify
   agent_models:
     review-verify: claude-bin:sonnet
 

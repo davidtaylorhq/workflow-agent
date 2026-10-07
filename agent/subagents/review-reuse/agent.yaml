@@ -1,0 +1,11 @@
+name: review-reuse
+description: "Finds what the change rebuilds that the project already has"
+agents_md: "false"
+skills: "none"
+
+mcp:
+  - name: github
+  - name: workspace
+
+max_turns: 30
+handover_mode: "light"

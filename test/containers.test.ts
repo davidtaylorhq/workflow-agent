@@ -173,7 +173,13 @@ test("spawnable agents install beside the main one, not inside it", (t) => {
   f.run("containers-up.ts");
 
   const agents = join(f.dir, "agent-config/agents");
-  for (const name of ["review-verify", "review-history", "review-precedent"]) {
+  for (const name of [
+    "review-defects",
+    "review-contract",
+    "review-reuse",
+    "review-sweep",
+    "review-verify",
+  ]) {
     assert.ok(existsSync(join(agents, name, "agent.yaml")), name);
     assert.ok(existsSync(join(agents, name, "system.md")), `${name} prompt`);
   }

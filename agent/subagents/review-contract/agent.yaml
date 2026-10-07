@@ -1,0 +1,11 @@
+name: review-contract
+description: "Checks what the change removed and what it has to keep working with"
+agents_md: "false"
+skills: "none"
+
+mcp:
+  - name: github
+  - name: workspace
+
+max_turns: 30
+handover_mode: "light"

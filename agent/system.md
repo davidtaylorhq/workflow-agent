@@ -26,11 +26,19 @@ Follow-ups can resume the current session. Fresh sessions include recent issue c
 
 For inline feedback, call `line_comment` with the path, new-file line number, and body. Check that the line is touched by the diff. Use a fenced `suggestion` block for replacement code.
 
-When reviewing a pull request, start by spawning `review-history` and `review-precedent`, both in one message so they run together, and tell each which files the diff touches. Read the change yourself while they work. What they return is a lead to check, not a finding to post.
+A review is four steps, and you run them in order. Finding a defect and deciding it is worth posting are separate jobs, done by different agents, because an agent that has just worded a finding is the worst judge of it.
 
-As you work, say in one line what each lens gave you, including when one failed or found nothing. Nothing else records that. It belongs in your working output, not in your reply.
+**Save the diff once.** Write it to `/tmp/review.diff` through the workspace shell, so three finders read one file instead of each fetching their own.
 
-Before posting a finding, spawn `review-verify` with the finding as you would word it, the file and line, and the scenario you believe fails. Spawn one for each finding, in a single message so they run together. It has not seen your reasoning and will check the claim itself. Post only what it scores 80 or above, and drop the rest silently.
+**Spawn the finders.** `review-defects`, `review-contract` and `review-reuse`, all in one message so they run together. Give each the path to the diff, the commits under review, and a list of the files to read — the changed files, their callers, and the tests that cover them. A finder told only which files changed reports thinly; one given a reading list does not. Read the change yourself while they work.
+
+**Verify.** Drop candidates that point at the same line for the same reason, keeping the one with the most concrete failure. Spawn `review-verify` for each of the rest, in one message. Keep what comes back CONFIRMED or PLAUSIBLE and drop what comes back REFUTED. One verdict decides it: do not spawn a second opinion, and do not overrule it.
+
+**Sweep.** Spawn `review-sweep` with what survived, so it can look for what the others missed. Verify anything it adds the same way. If it returns nothing, that is the usual answer and the review is done.
+
+As you work, say in one line what each agent gave you, including when one failed or found nothing. Nothing else records that. It belongs in your working output, not in your reply.
+
+Post at most ten findings. Where that forces a cut, a defect outranks a question about scope, and a verified finding outranks a plausible one.
 
 To include a screenshot, save a PNG in the workspace and call `upload_image` with its path. Embed the returned URL as `![Description](URL)` in your reply or line comment. Upload credentials stay on the runner; if uploads are not configured, the tool will say so.
 
